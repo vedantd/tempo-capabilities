@@ -97,10 +97,78 @@ tempo-hub/
 
 ### Vercel (Recommended)
 
-1. Push to GitHub
-2. Import project in Vercel
-3. Set environment variables
-4. Deploy
+Vercel is the recommended deployment platform as it's made by the Next.js creators and provides seamless integration.
+
+#### Prerequisites
+
+- Code pushed to GitHub (already done)
+- Vercel account (free tier is sufficient)
+
+#### Step-by-Step Deployment
+
+1. **Sign up for Vercel**
+   - Go to [vercel.com](https://vercel.com)
+   - Sign up with your GitHub account
+   - Authorize Vercel to access your repositories
+
+2. **Import Project**
+   - Click "Add New Project" in Vercel dashboard
+   - Select the `tempo-capabilities` repository
+   - Configure project settings:
+     - **Framework Preset**: Next.js (auto-detected)
+     - **Root Directory**: `tempo-hub`
+     - **Build Command**: `npm run build` (default)
+     - **Output Directory**: `.next` (default)
+     - **Install Command**: `npm install` (default)
+
+3. **Configure Environment Variables**
+   
+   In Vercel Dashboard → Project Settings → Environment Variables, add these for **Production**, **Preview**, and **Development**:
+   
+   ```
+   NEXT_PUBLIC_TEMPO_RPC_URL=https://rpc.testnet.tempo.xyz
+   NEXT_PUBLIC_TEMPO_EXPLORER_URL=https://explore.tempo.xyz
+   NEXT_PUBLIC_WEBAUTHN_RP_ID=your-app-name.vercel.app
+   ```
+   
+   **Important Notes**:
+   - Initially, use the auto-generated Vercel domain (e.g., `tempo-hub-xyz.vercel.app`)
+   - After first deployment, update `NEXT_PUBLIC_WEBAUTHN_RP_ID` to match your actual Vercel domain
+   - For custom domains, update `NEXT_PUBLIC_WEBAUTHN_RP_ID` to match your custom domain
+   - WebAuthn passkeys are domain-specific, so users will need to create new passkeys if the domain changes
+
+4. **Deploy**
+   - Click "Deploy" in Vercel dashboard
+   - Wait for build to complete (usually 2-5 minutes)
+   - Check build logs for any errors
+   - Visit the deployment URL
+
+5. **Post-Deployment**
+   - Verify app loads correctly
+   - Test WebAuthn passkey creation (requires HTTPS - automatic on Vercel)
+   - Test wallet connection
+   - Test payment flow
+   - Update `NEXT_PUBLIC_WEBAUTHN_RP_ID` to match your actual domain if needed
+
+#### Custom Domain (Optional)
+
+1. Go to Vercel Dashboard → Settings → Domains
+2. Add your custom domain (e.g., `tempo-hub.com`)
+3. Update DNS records as instructed by Vercel
+4. Wait for SSL certificate (automatic, usually < 1 minute)
+5. Update `NEXT_PUBLIC_WEBAUTHN_RP_ID` environment variable to match custom domain
+6. Redeploy
+
+**Note**: Users who created passkeys on the Vercel domain will need to create new ones for the custom domain (WebAuthn is domain-specific).
+
+#### Vercel Free Tier
+
+- Unlimited personal projects
+- 100GB bandwidth/month
+- Automatic HTTPS/SSL
+- Custom domains
+- Preview deployments for every push
+- Automatic deployments from GitHub
 
 ### Other Platforms
 
