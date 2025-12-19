@@ -18,8 +18,9 @@ export const config = createConfig({
   connectors: [
     webAuthn({
       keyManager: KeyManager.localStorage(),
-      // rpId must match the domain - 'localhost' for local development
-      rpId: 'localhost',
+      // rpId must match the domain - use environment variable for deployment
+      // Falls back to 'localhost' for local development
+      rpId: process.env.NEXT_PUBLIC_WEBAUTHN_RP_ID || 'localhost',
     }),
     metaMask(),
   ],
