@@ -1,57 +1,136 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useAccount } from 'wagmi'
-import { useRouter } from 'next/navigation'
-import { isAddress } from 'viem'
-import { useSendPayment } from '@/hooks/use-send-payment'
-import { AmountDisplay } from './amount-display'
-import { QuickAmounts } from './quick-amounts'
-import { MinimalRecipientInput } from './minimal-recipient-input'
-import { MemoInput } from './memo-input'
-import { FeeTokenSelector } from './fee-token-selector'
-import { SponsorToggle } from './sponsor-toggle'
-import { SendButton } from './send-button'
-import { TransactionStatus } from './transaction-status'
-import { TOKENS, TOKEN_INFO, type TokenAddress } from '@/lib/wagmi'
-import { pageVariants, pageTransition, staggerContainer, staggerItem } from '@/lib/motion'
-import { ChevronDown, ChevronUp } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAccount } from "wagmi";
+import { useRouter } from "next/navigation";
+import { useSendPayment } from "@/hooks/use-send-payment";
+import { useFormValidation } from "@/hooks/use-form-validation";
+import { AmountDisplay } from "./amount-display";
+import { QuickAmounts } from "./quick-amounts";
+import { MinimalRecipientInput } from "./minimal-recipient-input";
+import { MemoInput } from "./memo-input";
+import { FeeTokenSelector } from "./fee-token-selector";
+import { SponsorToggle } from "./sponsor-toggle";
+import { SendButton } from "./send-button";
+import { TransactionStatus } from "./transaction-status";
+import { TOKENS, TOKEN_INFO, type TokenAddress } from "@/lib/constants/tokens";
+import { QUICK_AMOUNTS } from "@/lib/constants/transactions";
+import {
+  pageVariants,
+  pageTransition,
+  staggerContainer,
+  staggerItem,
+} from "@/lib/motion";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  STORAGE_KEYS,
+  getSessionStorage,
+  setSessionStorage,
+  removeSessionStorage,
+} from "@/lib/utils/session-storage";
+
+interface FormState {
+  recipient: string;
+  amount: string;
+  memo: string;
+  selectedToken: TokenAddress;
+  feeToken: TokenAddress;
+  sponsored: boolean;
+}
 
 export function ModernSendForm() {
-  const { isConnected } = useAccount()
-  const router = useRouter()
+  const { isConnected } = useAccount();
+  const router = useRouter();
 
   // Form state
-  const [recipient, setRecipient] = useState('')
-  const [amount, setAmount] = useState('')
-  const [memo, setMemo] = useState('')
-  const [selectedToken, setSelectedToken] = useState<TokenAddress>(TOKENS.alphaUSD)
-  const [feeToken, setFeeToken] = useState<TokenAddress>(TOKENS.alphaUSD)
-  const [sponsored, setSponsored] = useState(false)
-  const [showAdvanced, setShowAdvanced] = useState(false)
-  const [showCustomAmount, setShowCustomAmount] = useState(false)
+  const [recipient, setRecipient] = useState("");
+  const [amount, setAmount] = useState("");
+  const [memo, setMemo] = useState("");
+  const [selectedToken, setSelectedToken] = useState<TokenAddress>(
+    TOKENS.alphaUSD
+  );
+  const [feeToken, setFeeToken] = useState<TokenAddress>(TOKENS.alphaUSD);
+  const [sponsored, setSponsored] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const { send, status, txHash, error, reset, isLoading } = useSendPayment()
+  const { send, status, txHash, error, reset, isLoading } = useSendPayment();
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Redirect to dashboard after successful payment
+  // Load form state from sessionStorage on mount
   useEffect(() => {
-    if (status === 'success') {
-      const timer = setTimeout(() => {
-        router.push('/dashboard?payment=success')
-      }, 3000)
-      return () => clearTimeout(timer)
+    const stored = getSessionStorage<FormState>(STORAGE_KEYS.forms.sendForm);
+    if (stored) {
+      setRecipient(stored.recipient || "");
+      setAmount(stored.amount || "");
+      setMemo(stored.memo || "");
+      setSelectedToken(stored.selectedToken || TOKENS.alphaUSD);
+      setFeeToken(stored.feeToken || TOKENS.alphaUSD);
+      setSponsored(stored.sponsored || false);
     }
-  }, [status, router])
+  }, []);
+
+  // Save form state to sessionStorage (debounced)
+  const saveFormState = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      const formState: FormState = {
+        recipient,
+        amount,
+        memo,
+        selectedToken,
+        feeToken,
+        sponsored,
+      };
+      setSessionStorage(STORAGE_KEYS.forms.sendForm, formState);
+    }, 500); // Debounce by 500ms
+  }, [recipient, amount, memo, selectedToken, feeToken, sponsored]);
+
+  // Save form state when it changes
+  useEffect(() => {
+    saveFormState();
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [saveFormState]);
+
+  // Clear form state on successful submission
+  useEffect(() => {
+    if (status === "success") {
+      removeSessionStorage(STORAGE_KEYS.forms.sendForm);
+    }
+  }, [status]);
+
+  // Redirect to dashboard after successful payment confirmation
+  // Add small delay to ensure transaction is fully confirmed before redirect
+  useEffect(() => {
+    if (status === "success" && txHash) {
+      // Small delay to ensure transaction is fully processed and user sees success state
+      const redirectTimer = setTimeout(() => {
+        router.push(`/dashboard?payment=success&txHash=${txHash}`);
+      }, 500); // 500ms delay to show success state before redirect
+
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [status, txHash, router]);
 
   // Form validation
-  const isValidRecipient = isAddress(recipient)
-  const isValidAmount = parseFloat(amount) > 0
-  const canSubmit = isConnected && isValidRecipient && isValidAmount && !isLoading
+  const { isValid, errors } = useFormValidation({
+    recipient,
+    amount,
+  });
 
-  const handleSubmit = async () => {
-    if (!canSubmit) return
+  const canSubmit = useMemo(() => {
+    return isConnected && isValid && !isLoading;
+  }, [isConnected, isValid, isLoading]);
+
+  const handleSubmit = useCallback(async () => {
+    if (!canSubmit) return;
 
     await send({
       token: selectedToken,
@@ -60,28 +139,31 @@ export function ModernSendForm() {
       memo: memo || undefined,
       feeToken: sponsored ? undefined : feeToken,
       sponsored,
-    })
-  }
+    });
+  }, [
+    canSubmit,
+    send,
+    selectedToken,
+    recipient,
+    amount,
+    memo,
+    sponsored,
+    feeToken,
+  ]);
 
-  const handleReset = () => {
-    reset()
-    setRecipient('')
-    setAmount('')
-    setMemo('')
-  }
+  const handleReset = useCallback(() => {
+    reset();
+    setRecipient("");
+    setAmount("");
+    setMemo("");
+  }, [reset]);
 
-  const handleQuickAmount = (amountStr: string) => {
-    setAmount(amountStr)
-    setShowCustomAmount(false)
-  }
-
-  const handleCustomAmount = () => {
-    setAmount('')
-    setShowCustomAmount(true)
-  }
+  const handleQuickAmount = useCallback((amountStr: string) => {
+    setAmount(amountStr);
+  }, []);
 
   // Show transaction status after submission
-  if (status !== 'idle') {
+  if (status !== "idle") {
     return (
       <motion.div
         initial="initial"
@@ -97,11 +179,11 @@ export function ModernSendForm() {
           onReset={handleReset}
         />
       </motion.div>
-    )
+    );
   }
 
-  const tokenInfo = TOKEN_INFO[selectedToken]
-  const quickAmounts = [10, 50, 100, 500]
+  const tokenInfo = TOKEN_INFO[selectedToken];
+  const quickAmounts = [...QUICK_AMOUNTS];
 
   return (
     <motion.div
@@ -110,13 +192,9 @@ export function ModernSendForm() {
       animate="visible"
       className="space-y-8"
     >
-      {/* Large Amount Display */}
+      {/* Large Amount Display - Editable */}
       <motion.div variants={staggerItem}>
-        <AmountDisplay
-          value={amount}
-          tokenSymbol={tokenInfo.symbol}
-          isFocused={showCustomAmount}
-        />
+        <AmountDisplay value={amount} onChange={setAmount} />
       </motion.div>
 
       {/* Quick Amount Buttons */}
@@ -125,55 +203,12 @@ export function ModernSendForm() {
           amounts={quickAmounts}
           selectedAmount={amount}
           onSelect={handleQuickAmount}
-          onCustom={handleCustomAmount}
         />
       </motion.div>
 
-      {/* Amount Input (when custom) */}
-      <AnimatePresence>
-        {showCustomAmount && (
-          <motion.div
-            variants={staggerItem}
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <div className="space-y-2">
-              <label htmlFor="custom-amount" className="text-sm font-medium">
-                Enter Amount
-              </label>
-              <input
-                id="custom-amount"
-                type="number"
-                inputMode="decimal"
-                value={amount}
-                onChange={(e) => {
-                  const value = e.target.value
-                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                    setAmount(value)
-                  }
-                }}
-                onBlur={() => {
-                  if (amount === '') {
-                    setShowCustomAmount(false)
-                  }
-                }}
-                autoFocus
-                className="w-full h-14 text-2xl font-semibold text-center bg-muted rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                placeholder="0.00"
-              />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Recipient Input */}
       <motion.div variants={staggerItem}>
-        <MinimalRecipientInput
-          value={recipient}
-          onChange={setRecipient}
-        />
+        <MinimalRecipientInput value={recipient} onChange={setRecipient} />
       </motion.div>
 
       {/* Memo Input */}
@@ -201,7 +236,7 @@ export function ModernSendForm() {
           {showAdvanced && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
+              animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
               className="space-y-4 overflow-hidden"
@@ -215,10 +250,7 @@ export function ModernSendForm() {
 
               {/* Fee Options */}
               <div className="space-y-4 pt-4 border-t border-border/50">
-                <SponsorToggle
-                  checked={sponsored}
-                  onChange={setSponsored}
-                />
+                <SponsorToggle checked={sponsored} onChange={setSponsored} />
 
                 {!sponsored && (
                   <FeeTokenSelector
@@ -240,13 +272,11 @@ export function ModernSendForm() {
           disabled={!canSubmit}
           isLoading={isLoading}
           amount={amount}
-          tokenSymbol={tokenInfo.symbol}
         />
         <p className="text-xs text-center text-muted-foreground mt-3">
           Transaction will be final in ~0.5 seconds
         </p>
       </motion.div>
     </motion.div>
-  )
+  );
 }
-

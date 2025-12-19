@@ -1,43 +1,82 @@
-'use client'
+"use client";
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
-import type { Toast } from '@/components/ui/toast'
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  type ReactNode,
+} from "react";
+import type { Toast } from "@/components/ui/toast";
+import {
+  STORAGE_KEYS,
+  getSessionStorage,
+  setSessionStorage,
+  cleanupExpiredToastCooldowns,
+} from "@/lib/utils/session-storage";
 
 interface ToastContextType {
-  toast: (newToast: Omit<Toast, 'id'>) => string
-  dismiss: (id: string) => void
-  toasts: Toast[]
+  toast: (newToast: Omit<Toast, "id"> & { txHash?: string }) => string;
+  dismiss: (id: string) => void;
+  toasts: Toast[];
 }
 
-const ToastContext = createContext<ToastContextType | undefined>(undefined)
+const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-let toastIdCounter = 0
+let toastIdCounter = 0;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([])
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const COOLDOWN_MS = 5000; // 5 second cooldown per transaction hash
 
-  const toast = useCallback((newToast: Omit<Toast, 'id'>) => {
-    const id = `toast-${++toastIdCounter}`
-    setToasts((prev) => [...prev, { ...newToast, id }])
-    return id
-  }, [])
+  // Clean up expired cooldowns on mount
+  useEffect(() => {
+    cleanupExpiredToastCooldowns();
+  }, []);
+
+  const toast = useCallback(
+    (newToast: Omit<Toast, "id"> & { txHash?: string }) => {
+      // If this toast is for a transaction hash, check if we've already shown it
+      if (newToast.txHash) {
+        const now = Date.now();
+        const cooldownKey = STORAGE_KEYS.toast.cooldown(newToast.txHash);
+        const lastShown = getSessionStorage<number>(cooldownKey);
+
+        // Skip if shown within cooldown period
+        if (lastShown && now - lastShown < COOLDOWN_MS) {
+          return "";
+        }
+
+        // Mark as shown in sessionStorage
+        setSessionStorage(cooldownKey, now);
+
+        // Clean up expired entries (this is also done on mount, but do it here too for immediate cleanup)
+        cleanupExpiredToastCooldowns();
+      }
+
+      const id = `toast-${++toastIdCounter}`;
+      setToasts((prev) => [...prev, { ...newToast, id }]);
+      return id;
+    },
+    []
+  );
 
   const dismiss = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id))
-  }, [])
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
 
   return (
     <ToastContext.Provider value={{ toast, dismiss, toasts }}>
       {children}
     </ToastContext.Provider>
-  )
+  );
 }
 
 export function useToast() {
-  const context = useContext(ToastContext)
+  const context = useContext(ToastContext);
   if (context === undefined) {
-    throw new Error('useToast must be used within a ToastProvider')
+    throw new Error("useToast must be used within a ToastProvider");
   }
-  return context
+  return context;
 }
-
