@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { WagmiProvider } from 'wagmi'
-import { config } from '@/lib/wagmi'
-import { useState, type ReactNode } from 'react'
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { WagmiProvider } from "wagmi";
+import { config } from "@/lib/wagmi";
+import { useState, type ReactNode } from "react";
 
 export function Web3Provider({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -14,23 +14,20 @@ export function Web3Provider({ children }: { children: ReactNode }) {
             staleTime: 5 * 1000,
             refetchOnWindowFocus: false,
             // Show stale data immediately while fetching (prevents blocking UI)
-            placeholderData: (previousData) => previousData,
+            placeholderData: (previousData: unknown) => previousData,
             // Fail faster on errors
             retry: 1,
             retryDelay: 1000,
             // Don't block on network errors
-            networkMode: 'online',
+            networkMode: "online",
           },
         },
       })
-  )
+  );
 
   return (
     <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </WagmiProvider>
-  )
+  );
 }
-
