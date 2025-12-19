@@ -3,9 +3,11 @@
 import { useAccount } from 'wagmi'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { SignUpButton, SignInButton, ConnectWalletButton } from '@/components/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Zap, Shield, Clock, DollarSign } from 'lucide-react'
+import { pageVariants, pageTransition, staggerContainer, staggerItem } from '@/lib/motion'
 
 export default function LandingPage() {
   const { isConnected } = useAccount()
@@ -19,23 +21,40 @@ export default function LandingPage() {
   }, [isConnected, router])
   
   return (
-    <main className="min-h-screen flex flex-col">
+    <motion.main
+      className="min-h-screen flex flex-col"
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={pageVariants}
+      transition={pageTransition}
+    >
       {/* Hero Section */}
       <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8">
-        <div className="w-full max-w-md space-y-8">
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+          className="w-full max-w-md space-y-8"
+        >
           {/* Logo & Title */}
-          <div className="text-center space-y-4">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4">
+          <motion.div variants={staggerItem} className="text-center space-y-4">
+            <motion.div
+              className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4"
+              whileHover={{ scale: 1.05, rotate: 5 }}
+              transition={{ type: 'spring', stiffness: 300 }}
+            >
               <Zap className="w-8 h-8 text-primary-foreground" />
-            </div>
+            </motion.div>
             <h1 className="text-4xl font-bold tracking-tight">TempoHub</h1>
             <p className="text-lg text-muted-foreground">
               Stablecoin payments with passkey security
             </p>
-          </div>
+          </motion.div>
           
           {/* Auth Card */}
-          <Card className="border-border/50 bg-card/50 backdrop-blur">
+          <motion.div variants={staggerItem}>
+            <Card className="border-border/50 bg-card/50 backdrop-blur">
             <CardHeader className="text-center pb-2">
               <CardTitle className="text-xl">Get Started</CardTitle>
               <CardDescription>
@@ -60,9 +79,10 @@ export default function LandingPage() {
               </div>
             </CardContent>
           </Card>
+          </motion.div>
           
           {/* Features */}
-          <div className="grid grid-cols-3 gap-4 pt-4">
+          <motion.div variants={staggerItem} className="grid grid-cols-3 gap-4 pt-4">
             <FeatureCard 
               icon={<Shield className="w-5 h-5" />}
               title="Secure"
@@ -78,15 +98,20 @@ export default function LandingPage() {
               title="Gasless"
               description="No ETH needed"
             />
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
       
       {/* Footer */}
-      <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/40">
+      <motion.footer
+        className="py-6 text-center text-sm text-muted-foreground border-t border-border/40"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+      >
         <p>Built on <span className="text-primary font-medium">Tempo Blockchain</span></p>
-      </footer>
-    </main>
+      </motion.footer>
+    </motion.main>
   )
 }
 

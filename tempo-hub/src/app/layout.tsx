@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Web3Provider } from "@/providers/web3-provider";
+import { DemoProvider } from "@/contexts/demo-context";
+import { ToastProvider } from "@/contexts/toast-context";
+import { DemoToggleButton } from "@/components/demo/demo-toggle-button";
+import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "@/components/error-boundary";
 import "./globals.css";
 
@@ -31,7 +35,15 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
       >
         <ErrorBoundary>
-          <Web3Provider>{children}</Web3Provider>
+          <DemoProvider>
+            <ToastProvider>
+              <Web3Provider>
+                {children}
+                <DemoToggleButton />
+                <Toaster />
+              </Web3Provider>
+            </ToastProvider>
+          </DemoProvider>
         </ErrorBoundary>
       </body>
     </html>
