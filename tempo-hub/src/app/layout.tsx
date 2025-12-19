@@ -6,6 +6,9 @@ import { ToastProvider } from "@/contexts/toast-context";
 import { DemoToggleButton } from "@/components/demo/demo-toggle-button";
 import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { Background } from "@/components/layout/background";
+import { PageTransition } from "@/components/layout/page-transition";
+import { SessionStorageCleanup } from "@/components/session-storage-cleanup";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,9 +22,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TempoHub - Stablecoin Payments",
-  description:
-    "Send stablecoin payments with passkey authentication on Tempo blockchain",
+  title: "TempoHub - Payments",
+  description: "Send payments with passkey authentication on Tempo blockchain",
 };
 
 export default function RootLayout({
@@ -34,11 +36,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
       >
+        <Background />
         <ErrorBoundary>
           <DemoProvider>
             <ToastProvider>
               <Web3Provider>
-                {children}
+                <SessionStorageCleanup />
+                <PageTransition>{children}</PageTransition>
                 <DemoToggleButton />
                 <Toaster />
               </Web3Provider>
