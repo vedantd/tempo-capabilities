@@ -1,6 +1,7 @@
 "use client";
 
 import { useAccount, useDisconnect } from "wagmi";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Copy, LogOut, Check, Fingerprint, Wallet } from "lucide-react";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
@@ -9,6 +10,7 @@ import { truncateAddress } from "@/lib/utils/address";
 export function AccountDisplay() {
   const { address, connector } = useAccount();
   const { disconnect } = useDisconnect();
+  const router = useRouter();
   const { copied, copy } = useCopyToClipboard();
 
   if (!address) return null;
@@ -18,6 +20,14 @@ export function AccountDisplay() {
 
   const copyAddress = () => {
     copy(address);
+  };
+
+  const handleDisconnect = () => {
+    // Disconnect and redirect immediately
+    // The disconnect will update isConnected state, and the landing page will render
+    disconnect();
+    // Use replace to avoid adding to history stack
+    router.replace("/");
   };
 
   return (
@@ -57,7 +67,7 @@ export function AccountDisplay() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => disconnect()}
+          onClick={handleDisconnect}
           className="h-7 w-7"
         >
           <LogOut className="h-3.5 w-3.5" />
