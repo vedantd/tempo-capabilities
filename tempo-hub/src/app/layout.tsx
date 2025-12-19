@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Background } from "@/components/layout/background";
 import { PageTransition } from "@/components/layout/page-transition";
+import { HeaderWrapper } from "@/components/layout/header-wrapper";
 import { SessionStorageCleanup } from "@/components/session-storage-cleanup";
 import "./globals.css";
 
@@ -42,6 +43,7 @@ export default function RootLayout({
             <ToastProvider>
               <Web3Provider>
                 <SessionStorageCleanup />
+                <HeaderWrapper />
                 <PageTransition>{children}</PageTransition>
                 <DemoToggleButton />
                 <Toaster />

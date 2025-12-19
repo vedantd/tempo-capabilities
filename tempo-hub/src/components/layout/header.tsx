@@ -30,7 +30,7 @@ export function Header() {
           {/* Navigation - only show when connected */}
           {isConnected && (
             <nav className="hidden md:flex items-center gap-6 flex-1 justify-center">
-              <Link href="/dashboard" className="relative">
+              <Link href="/dashboard" prefetch={true} className="relative">
                 <motion.div
                   className={cn(
                     "p-2 rounded-lg transition-colors",
@@ -53,7 +53,7 @@ export function Header() {
                   />
                 )}
               </Link>
-              <Link href="/transactions" className="relative">
+              <Link href="/transactions" prefetch={true} className="relative">
                 <motion.div
                   className={cn(
                     "p-2 rounded-lg transition-colors",
