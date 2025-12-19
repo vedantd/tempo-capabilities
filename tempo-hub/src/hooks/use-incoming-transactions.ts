@@ -151,7 +151,15 @@ export function useIncomingTransactions() {
 
             // Fetch all Transfer logs (both Transfer and TransferWithMemo) using raw topics
             // This avoids viem creating filters internally
-            const allLogs = await client.getLogs({
+            // Using type assertion because tempo-extended client types don't include topics parameter
+            const allLogs = await (client.getLogs as (
+              params: {
+                address: Address;
+                topics: (Hex | null)[];
+                fromBlock: bigint;
+                toBlock: bigint;
+              }
+            ) => Promise<any[]>)({
               address: tokenAddress as Address,
               topics: [
                 transferEventTopic, // Event signature

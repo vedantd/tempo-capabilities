@@ -129,7 +129,7 @@ export function hasInSessionStorageSet(key: string, value: string): boolean {
 /**
  * Clear all address-scoped data for a given address
  */
-export function clearAddressScopedData(address: string): void {
+export function clearAddressScopedData(address: string | undefined): void {
   if (!address) return;
   const normalizedAddress = address.toLowerCase();
   

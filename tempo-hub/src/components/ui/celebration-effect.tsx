@@ -43,6 +43,10 @@ export function CelebrationEffect({
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
+    // Store canvas reference for Particle class
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+
     // Confetti particle class
     class Particle {
       x: number;
@@ -57,8 +61,8 @@ export function CelebrationEffect({
       maxLife: number;
 
       constructor() {
-        this.x = canvas.width / 2;
-        this.y = canvas.height / 2;
+        this.x = canvasWidth / 2;
+        this.y = canvasHeight / 2;
         this.vx =
           (Math.random() - 0.5) *
           (intensity === "high" ? 12 : intensity === "medium" ? 8 : 5);
@@ -96,7 +100,7 @@ export function CelebrationEffect({
       }
 
       isDead() {
-        return this.life >= this.maxLife || this.y > canvas.height + 50;
+        return this.life >= this.maxLife || this.y > canvasHeight + 50;
       }
     }
 
@@ -111,7 +115,7 @@ export function CelebrationEffect({
 
     // Animation loop
     function animate() {
-      if (!ctx) return;
+      if (!ctx || !canvas) return;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -129,7 +133,9 @@ export function CelebrationEffect({
         animationIdRef.current = requestAnimationFrame(animate);
       } else {
         // Clean up when animation completes
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (ctx && canvas) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
         animationIdRef.current = null;
       }
     }
@@ -142,7 +148,7 @@ export function CelebrationEffect({
         cancelAnimationFrame(animationIdRef.current);
         animationIdRef.current = null;
       }
-      if (ctx) {
+      if (ctx && canvas) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
       }
     };
