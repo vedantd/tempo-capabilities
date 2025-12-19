@@ -35,13 +35,10 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     setIsDemoMode((prev) => !prev)
   }
 
-  // Prevent hydration mismatch
-  if (!mounted) {
-    return <>{children}</>
-  }
-
+  // Always provide context, even before mount (prevents errors)
+  // Default to false during SSR/initial render
   return (
-    <DemoContext.Provider value={{ isDemoMode, toggleDemoMode }}>
+    <DemoContext.Provider value={{ isDemoMode: mounted ? isDemoMode : false, toggleDemoMode }}>
       {children}
     </DemoContext.Provider>
   )
