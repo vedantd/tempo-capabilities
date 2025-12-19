@@ -75,9 +75,9 @@ function ActionButton({
   return (
     <motion.div
       variants={staggerItem}
-      initial="hidden"
+      initial="visible"
       animate="visible"
-      transition={{ delay }}
+      transition={{ delay: delay * 0.3 }}
       className="h-full"
     >
       <Link href={href} className="block h-full">
@@ -300,7 +300,7 @@ export function ActionButtons() {
         description=""
         gradient="bg-gradient-to-br from-emerald-500/20 via-emerald-500/10 to-emerald-500/20"
         glowColor="emerald"
-        delay={0.1}
+        delay={0}
       />
     </div>
   );

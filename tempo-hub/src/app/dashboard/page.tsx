@@ -9,7 +9,6 @@ import { CelebrationEffect } from "@/components/ui/celebration-effect";
 import { AccountDisplay } from "@/components/auth";
 import { TokenList, FaucetButton } from "@/components/wallet";
 import { ActionButtons } from "@/components/dashboard/action-buttons";
-import { ClientOnly } from "@/components/client-only";
 import { staggerContainer, staggerItem } from "@/lib/motion";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { SkeletonCard } from "@/components/ui/skeleton";
@@ -121,7 +120,7 @@ function DashboardContent() {
         <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
           <motion.div
             variants={staggerContainer}
-            initial="hidden"
+            initial="visible"
             animate="visible"
             className="space-y-8"
           >
@@ -163,9 +162,5 @@ function DashboardContent() {
 }
 
 export default function DashboardPage() {
-  return (
-    <ClientOnly>
-      <DashboardContent />
-    </ClientOnly>
-  );
+  return <DashboardContent />;
 }
