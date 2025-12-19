@@ -29,7 +29,7 @@ export class ErrorBoundary extends Component<Props, State> {
     // Log error to error reporting service in production
     if (process.env.NODE_ENV === 'production') {
       // TODO: Integrate with error reporting service (e.g., Sentry)
-      console.error('Error caught by boundary:', error, errorInfo)
+      // Error logging is handled by logError utility
     } else {
       console.error('Error caught by boundary:', error, errorInfo)
     }

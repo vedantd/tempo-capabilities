@@ -114,6 +114,12 @@
   /* Deep navy/indigo theme for Tempo */
   --background: oklch(0.13 0.02 260);
   --foreground: oklch(0.95 0.01 260);
+  
+  /* Background gradient colors */
+  --bg-gradient-purple: oklch(0.7 0.18 280);
+  --bg-gradient-blue: oklch(0.7 0.18 200);
+  --bg-gradient-indigo: oklch(0.6 0.15 250);
+  --bg-gradient-dark-purple: oklch(0.5 0.12 290);
   --card: oklch(0.17 0.02 260);
   --card-foreground: oklch(0.95 0.01 260);
   --popover: oklch(0.17 0.02 260);
@@ -153,8 +159,12 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    background-color: transparent;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background-color: transparent;
   }
 }
 

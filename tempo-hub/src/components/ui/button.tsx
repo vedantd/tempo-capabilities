@@ -1,12 +1,13 @@
-'use client'
+"use client";
 
-import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { cva, type VariantProps } from "class-variance-authority"
-import { motion } from "framer-motion"
-import { scaleVariants, scaleTransition } from "@/lib/motion"
+import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
+import { motion } from "framer-motion";
+import { scaleVariants, scaleTransition } from "@/lib/motion";
+import { RippleEffect } from "./ripple-effect";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
@@ -38,7 +39,7 @@ const buttonVariants = cva(
       size: "default",
     },
   }
-)
+);
 
 function Button({
   className,
@@ -49,8 +50,35 @@ function Button({
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
+    asChild?: boolean;
   }) {
+  const [ripples, setRipples] = React.useState<
+    Array<{ id: number; x: number; y: number }>
+  >([]);
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (disabled || asChild) {
+      props.onClick?.(e as any);
+      return;
+    }
+
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (rect) {
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const id = Date.now();
+
+      setRipples((prev) => [...prev, { id, x, y }]);
+
+      setTimeout(() => {
+        setRipples((prev) => prev.filter((r) => r.id !== id));
+      }, 600);
+    }
+
+    props.onClick?.(e as any);
+  };
+
   if (asChild) {
     return (
       <Slot
@@ -60,27 +88,45 @@ function Button({
         className={cn(buttonVariants({ variant, size, className }))}
         {...props}
       />
-    )
+    );
   }
 
   // Extract motion-specific props and regular button props
-  const { onDrag, onDragStart, onDragEnd, ...buttonProps } = props as any
+  const { onDrag, onDragStart, onDragEnd, onClick, ...buttonProps } =
+    props as any;
 
   return (
     <motion.button
+      ref={buttonRef}
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(
+        "relative overflow-hidden",
+        buttonVariants({ variant, size, className })
+      )}
       disabled={disabled}
       variants={!disabled ? scaleVariants : undefined}
       initial={!disabled ? "rest" : undefined}
       whileHover={!disabled ? "hover" : undefined}
       whileTap={!disabled ? "tap" : undefined}
       transition={!disabled ? scaleTransition : undefined}
+      onClick={handleClick}
       {...buttonProps}
-    />
-  )
+    >
+      {ripples.map((ripple) => (
+        <RippleEffect
+          key={ripple.id}
+          x={ripple.x}
+          y={ripple.y}
+          onComplete={() => {
+            setRipples((prev) => prev.filter((r) => r.id !== ripple.id));
+          }}
+        />
+      ))}
+      {props.children}
+    </motion.button>
+  );
 }
 
-export { Button, buttonVariants }
+export { Button, buttonVariants };

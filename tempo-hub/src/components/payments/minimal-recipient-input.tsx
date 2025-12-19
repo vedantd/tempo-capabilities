@@ -46,7 +46,7 @@ export function MinimalRecipientInput({
             onBlur={() => setHasInteracted(true)}
             placeholder="0x..."
             className={cn(
-              "h-14 text-base font-mono pr-12 transition-all",
+              "h-14 text-base font-mono pr-12 transition-all bg-transparent focus:bg-transparent focus-visible:bg-transparent",
               showError && "border-destructive focus-visible:ring-destructive",
               isComplete && !showError && "border-success/50"
             )}

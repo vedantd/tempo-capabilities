@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAccount } from "wagmi";
+import { motion } from "framer-motion";
 import { AccountDisplay } from "@/components/auth";
-import { Zap } from "lucide-react";
+import { Zap, History, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Header() {
@@ -29,38 +30,51 @@ export function Header() {
           {/* Navigation - only show when connected */}
           {isConnected && (
             <nav className="hidden md:flex items-center gap-6 flex-1 justify-center">
-              <Link
-                href="/dashboard"
-                className={cn(
-                  "text-sm font-medium transition-colors",
-                  pathname === "/dashboard"
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+              <Link href="/dashboard" className="relative">
+                <motion.div
+                  className={cn(
+                    "p-2 rounded-lg transition-colors",
+                    pathname === "/dashboard"
+                      ? "text-foreground bg-accent"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  )}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <Home className="h-5 w-5" />
+                </motion.div>
+                {pathname === "/dashboard" && (
+                  <motion.div
+                    className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary"
+                    layoutId="activeNav"
+                    initial={false}
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
                 )}
-              >
-                Dashboard
               </Link>
-              <Link
-                href="/send"
-                className={cn(
-                  "text-sm font-medium transition-colors",
-                  pathname === "/send"
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+              <Link href="/transactions" className="relative">
+                <motion.div
+                  className={cn(
+                    "p-2 rounded-lg transition-colors",
+                    pathname === "/transactions"
+                      ? "text-foreground bg-accent"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  )}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <History className="h-5 w-5" />
+                </motion.div>
+                {pathname === "/transactions" && (
+                  <motion.div
+                    className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary"
+                    layoutId="activeNav"
+                    initial={false}
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
                 )}
-              >
-                Send
-              </Link>
-              <Link
-                href="/receive"
-                className={cn(
-                  "text-sm font-medium transition-colors",
-                  pathname === "/receive"
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Receive
               </Link>
             </nav>
           )}

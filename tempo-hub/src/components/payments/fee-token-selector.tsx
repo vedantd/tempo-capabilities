@@ -1,6 +1,6 @@
 'use client'
 
-import { TOKENS, TOKEN_INFO, type TokenAddress } from '@/lib/wagmi'
+import { TOKENS, TOKEN_INFO, type TokenAddress } from '@/lib/constants/tokens'
 import { Label } from '@/components/ui/label'
 import {
   Select,

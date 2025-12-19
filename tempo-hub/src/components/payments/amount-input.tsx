@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { DollarSign } from "lucide-react";
 import { useTokenBalance } from "@/hooks/use-token-balances";
-import { type TokenAddress } from "@/lib/wagmi";
+import { type TokenAddress } from "@/lib/constants/tokens";
+import { formatTokenBalance } from "@/lib/utils";
 
 interface AmountInputProps {
   value: string;
@@ -43,7 +44,7 @@ export function AmountInput({ value, onChange, token }: AmountInputProps) {
         </Label>
         {tokenBalance && (
           <span className="text-xs text-muted-foreground">
-            Balance: ${parseFloat(tokenBalance.formatted).toFixed(2)}
+            Balance: ${formatTokenBalance(tokenBalance.formatted)}
           </span>
         )}
       </div>

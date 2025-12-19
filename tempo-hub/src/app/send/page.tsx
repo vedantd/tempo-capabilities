@@ -9,8 +9,7 @@ import { ModernSendForm } from "@/components/payments/modern-send-form";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { ClientOnly } from "@/components/client-only";
-import { motion } from "framer-motion";
-import { pageVariants, pageTransition } from "@/lib/motion";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 function SendContent() {
   const { isConnected } = useAccount();
@@ -26,22 +25,13 @@ function SendContent() {
   if (!isConnected) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground">Redirecting...</p>
-        </div>
+        <LoadingSpinner size="lg" label="Redirecting..." />
       </div>
     );
   }
 
   return (
-    <motion.div
-      className="min-h-screen flex flex-col"
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      variants={pageVariants}
-      transition={pageTransition}
-    >
+    <div className="min-h-screen flex flex-col">
       <Header />
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-2xl">
@@ -68,7 +58,7 @@ function SendContent() {
           </div>
         </div>
       </main>
-    </motion.div>
+    </div>
   );
 }
 

@@ -3,22 +3,21 @@
 import { useAccount, useDisconnect } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { Copy, LogOut, Check, Fingerprint, Wallet } from "lucide-react";
-import { useState } from "react";
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
+import { truncateAddress } from "@/lib/utils/address";
 
 export function AccountDisplay() {
   const { address, connector } = useAccount();
   const { disconnect } = useDisconnect();
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
 
   if (!address) return null;
 
-  const truncatedAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
+  const truncatedAddress = truncateAddress(address);
   const isPasskey = connector?.id === "webAuthn";
 
-  const copyAddress = async () => {
-    await navigator.clipboard.writeText(address);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyAddress = () => {
+    copy(address);
   };
 
   return (

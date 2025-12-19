@@ -40,9 +40,9 @@ export function SendForm() {
 
   // Redirect to dashboard after successful payment
   useEffect(() => {
-    if (status === 'success') {
+    if (status === "success") {
       const timer = setTimeout(() => {
-        router.push('/dashboard?payment=success');
+        router.push("/dashboard?payment=success");
       }, 3000); // Give user 3 seconds to see success message
       return () => clearTimeout(timer);
     }
@@ -97,9 +97,7 @@ export function SendForm() {
           <Send className="h-5 w-5" />
           Send Payment
         </CardTitle>
-        <CardDescription>
-          Transfer stablecoins with instant finality
-        </CardDescription>
+        <CardDescription>Send payments with instant finality</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">

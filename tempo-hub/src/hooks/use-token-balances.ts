@@ -2,14 +2,9 @@
 
 import { useAccount } from 'wagmi'
 import { useQuery } from '@tanstack/react-query'
-import { createPublicClient, http, formatUnits, erc20Abi } from 'viem'
-import { tempoChain, TOKENS, TOKEN_INFO, type TokenAddress } from '@/lib/wagmi'
-import { TEMPO_RPC_URL } from '@/lib/constants'
-
-const client = createPublicClient({
-  chain: tempoChain,
-  transport: http(TEMPO_RPC_URL),
-})
+import { formatUnits } from 'viem'
+import { TOKENS, type TokenAddress } from '@/lib/constants/tokens'
+import { publicClient } from '@/lib/tempo-client'
 
 export interface TokenBalance {
   address: TokenAddress
@@ -24,26 +19,24 @@ async function fetchTokenBalance(
   tokenAddress: TokenAddress,
   accountAddress: `0x${string}`
 ): Promise<TokenBalance> {
-  const info = TOKEN_INFO[tokenAddress]
-  
-  // Fetch balance using standard ERC20 balanceOf
-  const balance = await client.readContract({
-    address: tokenAddress as `0x${string}`,
-    abi: erc20Abi,
-    functionName: 'balanceOf',
-    args: [accountAddress],
-  })
-  
-  // TIP-20 tokens use 6 decimals
-  const decimals = 6
+  // Use SDK's token.getBalance and token.getMetadata
+  const [balance, metadata] = await Promise.all([
+    publicClient.token.getBalance({
+      account: accountAddress,
+      token: tokenAddress as `0x${string}`,
+    }),
+    publicClient.token.getMetadata({
+      token: tokenAddress as `0x${string}`,
+    }),
+  ])
   
   return {
     address: tokenAddress,
-    name: info.name,
-    symbol: info.symbol,
-    decimals,
+    name: metadata.name,
+    symbol: metadata.symbol,
+    decimals: metadata.decimals,
     balance,
-    formatted: formatUnits(balance, decimals),
+    formatted: formatUnits(balance, metadata.decimals),
   }
 }
 
