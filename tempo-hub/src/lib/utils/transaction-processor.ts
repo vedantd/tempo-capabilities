@@ -43,6 +43,7 @@ export async function processTransferEvent(
     }
 
     // Use SDK's extractEvent to properly decode Transfer events
+    // This works for both Transfer and TransferWithMemo since they have the same structure
     try {
       const transferEvent = Actions.token.transfer.extractEvent(tokenLogs)
       

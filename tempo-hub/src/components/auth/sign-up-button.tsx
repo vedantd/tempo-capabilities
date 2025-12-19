@@ -16,7 +16,7 @@ export function SignUpButton() {
     if (!webAuthnConnector) return;
     connect({
       connector: webAuthnConnector,
-      capabilities: { type: 'sign-up' },
+      capabilities: { type: "sign-up" },
     });
   };
 
