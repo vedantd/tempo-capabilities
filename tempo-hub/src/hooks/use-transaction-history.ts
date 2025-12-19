@@ -87,228 +87,106 @@ export function useTransactionHistory() {
   useEffect(() => {
     // Reset state when address changes
     if (!address) {
-      // Clear address-scoped data when disconnected
-      if (seenIdsKeyRef.current) {
-        clearAddressScopedData(address)
-      }
+      // Reset state when disconnected
       seenTxIds.current.clear()
       seenIdsKeyRef.current = null
       lastBlockKeyRef.current = null
-      // Use cleanup to reset transactions
-      return () => {
-        setTransactions([])
-      }
-    }
-
-    // Initialize sessionStorage keys for this address
-    const normalizedAddress = address.toLowerCase()
-    seenIdsKeyRef.current = STORAGE_KEYS.transactions.seenIds(normalizedAddress, 'history')
-    lastBlockKeyRef.current = STORAGE_KEYS.transactions.lastBlock(normalizedAddress, 'history')
-
-    // Load seenTxIds from sessionStorage
-    const storedSeenIds = getSessionStorageSet(seenIdsKeyRef.current)
-    seenTxIds.current = storedSeenIds
-
-    // Load lastBlockNumber from sessionStorage
-    const storedLastBlock = getSessionStorage<string>(lastBlockKeyRef.current)
-    let lastBlockNumber: bigint | null = null
-    if (storedLastBlock) {
-      try {
-        lastBlockNumber = BigInt(storedLastBlock)
-      } catch {
-        lastBlockNumber = null
-      }
-    }
-
-    let isActive = true
-    let pollingInterval: NodeJS.Timeout | null = null
-
-    // Manual polling function using getLogs directly (no filters)
-    const pollTransactions = async () => {
-      if (!isActive || !address) return
-
-      try {
-        // Get current block number
-        const currentBlock = await client.getBlockNumber()
-        
-        // Determine fromBlock - start from last processed block or 1000 blocks ago
-        const fromBlock = lastBlockNumber 
-          ? lastBlockNumber + BigInt(1)
-          : currentBlock > BigInt(1000)
-            ? currentBlock - BigInt(1000)
-            : BigInt(0)
-
-        if (fromBlock > currentBlock) {
-          // No new blocks yet
-          return
-        }
-
-        const tokenAddresses = Object.values(TOKENS)
-        
-        for (const tokenAddress of tokenAddresses) {
-          if (!isActive) break
-
-          try {
-            // Get token metadata
-            const metadata = await client.token.getMetadata({ 
-              token: tokenAddress as Address 
-            })
-
-            // Fetch Transfer logs using getLogs directly (no filters)
-            // This uses eth_getLogs which Tempo supports
-            const transferLogs = await client.getLogs({
-              address: tokenAddress as Address,
-              event: {
-                type: 'event',
-                name: 'Transfer',
-                inputs: [
-                  { name: 'from', type: 'address', indexed: true },
-                  { name: 'to', type: 'address', indexed: true },
-                  { name: 'value', type: 'uint256', indexed: false },
-                ],
-              },
-              args: {
-                from: address as Address,
-              },
-              fromBlock,
-              toBlock: currentBlock,
-            }).catch(() => [])
-
-            const receivedLogs = await client.getLogs({
-              address: tokenAddress as Address,
-              event: {
-                type: 'event',
-                name: 'Transfer',
-                inputs: [
-                  { name: 'from', type: 'address', indexed: true },
-                  { name: 'to', type: 'address', indexed: true },
-                  { name: 'value', type: 'uint256', indexed: false },
-                ],
-              },
-              args: {
-                to: address as Address,
-              },
-              fromBlock,
-              toBlock: currentBlock,
-            }).catch(() => [])
-
-            // Fetch TransferWithMemo logs
-            const sentMemoLogs = await client.getLogs({
-              address: tokenAddress as Address,
-              event: {
-                type: 'event',
-                name: 'TransferWithMemo',
-                inputs: [
-                  { name: 'from', type: 'address', indexed: true },
-                  { name: 'to', type: 'address', indexed: true },
-                  { name: 'value', type: 'uint256', indexed: false },
-                  { name: 'memo', type: 'bytes32', indexed: false },
-                ],
-              },
-              args: {
-                from: address as Address,
-              },
-              fromBlock,
-              toBlock: currentBlock,
-            }).catch(() => [])
-
-            const receivedMemoLogs = await client.getLogs({
-              address: tokenAddress as Address,
-              event: {
-                type: 'event',
-                name: 'TransferWithMemo',
-                inputs: [
-                  { name: 'from', type: 'address', indexed: true },
-                  { name: 'to', type: 'address', indexed: true },
-                  { name: 'value', type: 'uint256', indexed: false },
-                  { name: 'memo', type: 'bytes32', indexed: false },
-                ],
-              },
-              args: {
-                to: address as Address,
-              },
-              fromBlock,
-              toBlock: currentBlock,
-            }).catch(() => [])
-
-            // Process all logs - group by transaction hash to avoid duplicate receipt fetches
-            const allLogs = [...transferLogs, ...receivedLogs, ...sentMemoLogs, ...receivedMemoLogs]
-            const txHashes = new Set<string>()
-            
-            // Collect unique transaction hashes
-            for (const log of allLogs) {
-              txHashes.add(log.transactionHash)
-            }
-            
-            // Process each transaction by fetching receipt and using SDK's extractEvent
-            for (const txHash of txHashes) {
-              if (!isActive) break
-
-              try {
-                // Get transaction receipt
-                const receipt = await client.getTransactionReceipt({ 
-                  hash: txHash as Hex 
-                }) as TransactionReceipt
-
-                // Process using utility function
-                await handleProcessTransferEvent(
-                  receipt,
-                  tokenAddress as Address,
-                  metadata.symbol,
-                  address as Address
-                )
-              } catch (err) {
-                logError(err, { 
-                  hook: 'useTransactionHistory', 
-                  action: 'processTransaction',
-                  metadata: { txHash }
-                })
-              }
-            }
-          } catch (err) {
-            logError(err, { 
-              hook: 'useTransactionHistory', 
-              action: 'fetchLogs',
-              metadata: { tokenAddress }
-            })
-          }
-        }
-
-        // Update last processed block
-        lastBlockNumber = currentBlock
-        // Persist to sessionStorage
-        if (lastBlockKeyRef.current) {
-          setSessionStorage(lastBlockKeyRef.current, currentBlock.toString())
-        }
-      } catch (err) {
-        logError(err, { hook: 'useTransactionHistory', action: 'pollTransactions' })
-        if (isActive) {
-          setError(err instanceof Error ? err : new Error('Failed to poll transactions'))
-        }
-      }
-    }
-
-    // Initial load
-    const initialLoad = async () => {
-      setIsLoading(true)
-      await pollTransactions()
+      setTransactions([])
       setIsLoading(false)
+      setError(null)
+      return
     }
 
-    initialLoad()
+    // MOCK MODE: Generate mock transactions instead of polling RPC
+    // This prevents rate limiting issues
+    const generateMockTransactions = () => {
+      setIsLoading(true)
+      
+      // Simulate loading delay
+      setTimeout(() => {
+        const mockTransactions: TempoTransaction[] = []
+        const tokenAddresses = Object.values(TOKENS)
+        const now = Date.now()
+        
+        // Generate 25-30 mock transactions
+        const numTransactions = 25 + Math.floor(Math.random() * 6)
+        
+        for (let i = 0; i < numTransactions; i++) {
+          const tokenAddress = tokenAddresses[Math.floor(Math.random() * tokenAddresses.length)] as Address
+          const tokenInfo = TOKEN_INFO[tokenAddress.toLowerCase() as keyof typeof TOKEN_INFO]
+          const isSent = Math.random() > 0.5
+          
+          // Generate random amount between 1 and 1000
+          const amount = BigInt(Math.floor(Math.random() * 999000000 + 1000000)) // 1-1000 with 6 decimals
+          const formattedAmount = (Number(amount) / 1e6).toFixed(6)
+          
+          // Generate random addresses
+          const from = isSent ? address : `0x${Array.from({ length: 40 }, () =>
+            Math.floor(Math.random() * 16).toString(16)
+          ).join('')}` as Address
+          
+          const to = isSent ? `0x${Array.from({ length: 40 }, () =>
+            Math.floor(Math.random() * 16).toString(16)
+          ).join('')}` as Address : address
+          
+          // Random memo (30% chance)
+          const memos = [
+            'Payment for services',
+            'Thanks!',
+            'Invoice #1234',
+            'Refund',
+            'Monthly subscription',
+            'Coffee ☕',
+            'Lunch money',
+          ]
+          const memo = Math.random() > 0.7 
+            ? memos[Math.floor(Math.random() * memos.length)]
+            : undefined
+          
+          // Generate timestamp (spread over last 30 days)
+          const daysAgo = Math.random() * 30
+          const timestamp = now - (daysAgo * 24 * 60 * 60 * 1000)
+          const blockTimestamp = BigInt(Math.floor(timestamp / 1000))
+          
+          // Generate fake transaction hash
+          const hash = `0x${Array.from({ length: 64 }, () =>
+            Math.floor(Math.random() * 16).toString(16)
+          ).join('')}` as Hex
+          
+          const tx: TempoTransaction = {
+            id: `mock-${hash}-${i}`,
+            hash,
+            type: isSent ? 'sent' : 'received',
+            token: tokenAddress,
+            tokenSymbol: tokenInfo?.symbol || 'TOKEN',
+            amount,
+            formattedAmount,
+            from,
+            to,
+            memo,
+            timestamp,
+            blockNumber: BigInt(1000000 + i),
+            blockTimestamp,
+          }
+          
+          mockTransactions.push(tx)
+        }
+        
+        // Sort by timestamp (most recent first)
+        mockTransactions.sort((a, b) => b.timestamp - a.timestamp)
+        
+        setTransactions(mockTransactions)
+        setIsLoading(false)
+      }, 500) // Simulate network delay
+    }
 
-        // Set up polling interval
-        pollingInterval = setInterval(() => {
-          pollTransactions()
-        }, TRANSACTION_POLLING_INTERVAL_MS)
-
+    generateMockTransactions()
+    
+    // No polling interval - just load once
     return () => {
-      isActive = false
-      if (pollingInterval) {
-        clearInterval(pollingInterval)
-      }
+      // Cleanup if needed
     }
-  }, [address, handleProcessTransferEvent])
+  }, [address])
 
   return {
     transactions,
