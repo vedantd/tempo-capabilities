@@ -5,7 +5,7 @@ import { useAccount } from "wagmi";
 import { useRouter, useSearchParams } from "next/navigation";
 
 // Force dynamic rendering - this page requires authentication
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/contexts/toast-context";
