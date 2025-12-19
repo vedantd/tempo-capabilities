@@ -61,6 +61,11 @@ export function useTokenBalances() {
     enabled: !!address,
     refetchInterval: 10000, // Refresh every 10s
     staleTime: 5000,
+    // Don't block UI - show stale data immediately if available
+    placeholderData: (previousData) => previousData,
+    // Reduce retry attempts to fail faster
+    retry: 1,
+    retryDelay: 1000,
   })
 }
 

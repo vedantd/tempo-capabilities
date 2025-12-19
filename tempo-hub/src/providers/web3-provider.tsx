@@ -13,6 +13,13 @@ export function Web3Provider({ children }: { children: ReactNode }) {
           queries: {
             staleTime: 5 * 1000,
             refetchOnWindowFocus: false,
+            // Show stale data immediately while fetching (prevents blocking UI)
+            placeholderData: (previousData) => previousData,
+            // Fail faster on errors
+            retry: 1,
+            retryDelay: 1000,
+            // Don't block on network errors
+            networkMode: 'online',
           },
         },
       })

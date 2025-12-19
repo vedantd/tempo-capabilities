@@ -22,10 +22,10 @@ import {
   setSessionStorage,
 } from "@/lib/utils/session-storage";
 
-function DashboardContentInner() {
-  const { isConnected } = useAccount();
-  const router = useRouter();
+// Separate component for search params handling to minimize Suspense blocking
+function PaymentSuccessHandler() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { toast } = useToast();
   const [celebrationKey, setCelebrationKey] = useState(0);
   const processedTxHashRef = useRef<string | null>(null);
@@ -95,6 +95,24 @@ function DashboardContentInner() {
     }
   }, [searchParams, toast, router]);
 
+  // Render celebration effect if needed
+  return (
+    <>
+      {celebrationKey > 0 && (
+        <CelebrationEffect
+          key={celebrationKey}
+          trigger={true}
+          intensity="medium"
+        />
+      )}
+    </>
+  );
+}
+
+function DashboardContentInner() {
+  const { isConnected } = useAccount();
+  const router = useRouter();
+
   // Redirect to landing if not connected
   useEffect(() => {
     if (!isConnected) {
@@ -112,14 +130,11 @@ function DashboardContentInner() {
 
   return (
     <>
-      {/* Only render CelebrationEffect when we actually want to trigger it */}
-      {celebrationKey > 0 && (
-        <CelebrationEffect
-          key={celebrationKey}
-          trigger={true}
-          intensity="medium"
-        />
-      )}
+      {/* Payment success handler - wrapped in Suspense to minimize blocking */}
+      <Suspense fallback={null}>
+        <PaymentSuccessHandler />
+      </Suspense>
+      
       <div className="min-h-screen flex flex-col">
         <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
           <motion.div
@@ -166,15 +181,7 @@ function DashboardContentInner() {
 }
 
 export default function DashboardPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center">
-          <LoadingSpinner size="lg" label="Loading..." />
-        </div>
-      }
-    >
-      <DashboardContentInner />
-    </Suspense>
-  );
+  // Since we're using force-dynamic, render immediately
+  // Only wrap the search params handler in Suspense
+  return <DashboardContentInner />;
 }
