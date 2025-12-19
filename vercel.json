@@ -1,7 +1,6 @@
 {
-  "buildCommand": "cd tempo-hub && npm run build",
-  "outputDirectory": "tempo-hub/.next",
-  "installCommand": "cd tempo-hub && npm install",
-  "framework": "nextjs",
-  "rootDirectory": "tempo-hub"
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "framework": "nextjs"
 }
