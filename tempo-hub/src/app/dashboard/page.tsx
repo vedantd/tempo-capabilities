@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useAccount } from "wagmi";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
@@ -18,7 +19,7 @@ import {
   setSessionStorage,
 } from "@/lib/utils/session-storage";
 
-function DashboardContent() {
+function DashboardContentInner() {
   const { isConnected } = useAccount();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -158,6 +159,20 @@ function DashboardContent() {
         </main>
       </div>
     </>
+  );
+}
+
+function DashboardContent() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <LoadingSpinner size="lg" label="Loading..." />
+        </div>
+      }
+    >
+      <DashboardContentInner />
+    </Suspense>
   );
 }
 
