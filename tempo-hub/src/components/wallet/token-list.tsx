@@ -2,19 +2,28 @@
 
 import { useTokenBalances } from '@/hooks/use-token-balances'
 import { TokenCard } from './token-card'
-import { Skeleton } from '@/components/ui/skeleton'
+import { SkeletonCard } from '@/components/ui/skeleton'
 import { AlertCircle } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { staggerContainer, staggerItem } from '@/lib/motion'
 
 export function TokenList() {
   const { data: tokens, isLoading, error } = useTokenBalances()
   
   if (isLoading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2">
+      <motion.div
+        className="grid gap-4 sm:grid-cols-2"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+      >
         {[...Array(4)].map((_, i) => (
-          <Skeleton key={i} className="h-32 rounded-xl" />
+          <motion.div key={i} variants={staggerItem}>
+            <SkeletonCard className="h-32" />
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     )
   }
   
@@ -36,11 +45,18 @@ export function TokenList() {
   }
   
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      {tokens.map((token) => (
-        <TokenCard key={token.address} token={token} />
+    <motion.div
+      className="grid gap-4 sm:grid-cols-2"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="visible"
+    >
+      {tokens.map((token, index) => (
+        <motion.div key={token.address} variants={staggerItem}>
+          <TokenCard token={token} />
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   )
 }
 

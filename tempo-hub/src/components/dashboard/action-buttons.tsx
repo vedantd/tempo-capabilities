@@ -34,6 +34,7 @@ function ActionButton({
   delay = 0,
 }: ActionButtonProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
 
   // Mouse position tracking for 3D tilt
   const x = useMotionValue(0);
@@ -93,10 +94,18 @@ function ActionButton({
           onMouseMove={handleMouseMove}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={handleMouseLeave}
+          onMouseDown={() => setIsPressed(true)}
+          onMouseUp={() => setIsPressed(false)}
           variants={glass3DVariants}
           initial="rest"
           whileHover="hover"
-          transition={glass3DTransition}
+          whileTap="tap"
+          animate={isPressed ? "tap" : isHovered ? "hover" : "rest"}
+          layout
+          transition={{
+            ...glass3DTransition,
+            layout: { duration: 0.3, ease: "easeOut" },
+          }}
         >
           {/* Animated gradient background */}
           <motion.div
@@ -163,11 +172,17 @@ function ActionButton({
 
           {/* Content container */}
           <div className="relative z-10 flex flex-col h-full justify-between">
-            {/* Icon - Centered */}
+            {/* Icon - Centered with morphing */}
             <motion.div
               className="flex-1 flex items-center justify-center"
+              layout
               animate={
-                isHovered
+                isPressed
+                  ? {
+                      scale: 0.9,
+                      rotateZ: 0,
+                    }
+                  : isHovered
                   ? {
                       scale: 1.1,
                       rotateZ: glowColor === "primary" ? 5 : -5,
@@ -181,6 +196,7 @@ function ActionButton({
                 type: "spring",
                 stiffness: 300,
                 damping: 20,
+                layout: { duration: 0.2 },
               }}
             >
               {icon}

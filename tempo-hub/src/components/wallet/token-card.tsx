@@ -1,41 +1,25 @@
 "use client";
 
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { type TokenBalance } from "@/hooks/use-token-balances";
 import { cardHoverVariants, cardTransition } from "@/lib/motion";
 import { RotatingCoin } from "./rotating-coin";
+import { AnimatedBalance } from "./animated-balance";
+import { cn } from "@/lib/utils";
 
 interface TokenCardProps {
   token: TokenBalance;
 }
 
-// Token colors for visual distinction
-const TOKEN_COLORS: Record<string, string> = {
-  pathUSD: "from-blue-500/20 to-blue-600/10 border-blue-500/30",
-  AlphaUSD: "from-purple-500/20 to-purple-600/10 border-purple-500/30",
-  BetaUSD: "from-emerald-500/20 to-emerald-600/10 border-emerald-500/30",
-  ThetaUSD: "from-amber-500/20 to-amber-600/10 border-amber-500/30",
-};
+// Common color for all token cards (neutral slate to match coin background)
+// Enhanced gradient for better visibility
+const COMMON_CARD_GRADIENT =
+  "from-slate-800/50 to-slate-900/40 border-slate-700/60";
 
-const TOKEN_ICON_COLORS: Record<string, string> = {
-  pathUSD: "text-blue-400",
-  AlphaUSD: "text-purple-400",
-  BetaUSD: "text-emerald-400",
-  ThetaUSD: "text-amber-400",
-};
-
-export function TokenCard({ token }: TokenCardProps) {
-  const gradientClass =
-    TOKEN_COLORS[token.symbol] ||
-    "from-gray-500/20 to-gray-600/10 border-gray-500/30";
-  const iconColor = TOKEN_ICON_COLORS[token.symbol] || "text-gray-400";
-
-  // Format balance with proper precision
-  const formattedBalance = parseFloat(token.formatted).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+export const TokenCard = memo(function TokenCard({ token }: TokenCardProps) {
+  const gradientClass = COMMON_CARD_GRADIENT;
 
   return (
     <motion.div
@@ -45,29 +29,36 @@ export function TokenCard({ token }: TokenCardProps) {
       transition={cardTransition}
     >
       <Card
-        className={`bg-gradient-to-br ${gradientClass} border overflow-hidden`}
+        className={cn(
+          "bg-gradient-to-br",
+          gradientClass,
+          "overflow-hidden",
+          "shadow-sm hover:shadow-md transition-shadow duration-200"
+        )}
       >
-        <CardContent className="p-5">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center">
-                <RotatingCoin size={40} symbol={token.symbol} />
-              </div>
-              <div>
-                <p className="font-semibold">{token.symbol}</p>
-                <p className="text-xs text-muted-foreground">{token.name}</p>
-              </div>
+        <CardContent className="p-6">
+          <div className="flex items-start gap-3">
+            {/* Icon - Left side, grouped with content */}
+            <div className="flex items-center justify-center shrink-0">
+              <RotatingCoin key={token.address} size={40} symbol="USD" />
             </div>
-          </div>
 
-          <div className="mt-4">
-            <p className="text-2xl font-bold tracking-tight">
-              ${formattedBalance}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">Balance</p>
+            {/* Content - Grouped with icon */}
+            <div className="flex-1 min-w-0">
+              {/* Amount - Large, prominent with animation */}
+              <AnimatedBalance
+                value={token.formatted}
+                className="text-3xl font-bold tracking-tighter leading-none block"
+              />
+
+              {/* Token name - Subtle, below amount */}
+              <p className="text-xs font-medium text-muted-foreground mt-0.5">
+                {token.name}
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
     </motion.div>
   );
-}
+});

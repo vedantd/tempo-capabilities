@@ -10,43 +10,61 @@ interface RotatingCoinProps {
   symbol?: string;
 }
 
-// Map token symbols to color classes for coin styling
-const TOKEN_COIN_COLORS: Record<
-  string,
-  { bg: string; border: string; text: string }
-> = {
+// Common background color for all coins (neutral dark slate)
+const COMMON_COIN_BG = "from-slate-700/50 to-slate-800/40";
+
+// Map token symbols to color classes for coin styling (only border and text vary)
+const TOKEN_COIN_COLORS: Record<string, { border: string; text: string }> = {
   pathUSD: {
-    bg: "from-blue-500/30 to-blue-600/20",
     border: "border-blue-400/50",
     text: "text-blue-300",
   },
   AlphaUSD: {
-    bg: "from-purple-500/30 to-purple-600/20",
     border: "border-purple-400/50",
     text: "text-purple-300",
   },
   BetaUSD: {
-    bg: "from-emerald-500/30 to-emerald-600/20",
     border: "border-emerald-400/50",
     text: "text-emerald-300",
   },
   ThetaUSD: {
-    bg: "from-amber-500/30 to-amber-600/20",
     border: "border-amber-400/50",
     text: "text-amber-300",
   },
 };
+
+// Generate consistent but random values based on symbol
+function getRotationParams(symbol: string) {
+  // Use symbol as seed for consistent randomness
+  let hash = 0;
+  for (let i = 0; i < symbol.length; i++) {
+    hash = symbol.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  // Generate rotation duration between 3.5s and 5.5s
+  const duration = 3.5 + (Math.abs(hash) % 20) / 10;
+
+  // Generate initial delay between 0s and 2s
+  const delay = (Math.abs(hash * 7) % 20) / 10;
+
+  // Generate shine duration between 2.5s and 4s
+  const shineDuration = 2.5 + (Math.abs(hash * 3) % 15) / 10;
+
+  return { duration, delay, shineDuration };
+}
 
 export function RotatingCoin({
   size = 40,
   className,
   symbol = "USD",
 }: RotatingCoinProps) {
-  const coinColors = TOKEN_COIN_COLORS[symbol] || {
-    bg: "from-primary/30 to-primary/20",
+  // Always use generic USD styling - blur lines between tokens
+  const coinColors = {
     border: "border-primary/50",
     text: "text-primary-foreground",
   };
+
+  const { duration, delay, shineDuration } = getRotationParams(symbol);
 
   return (
     <div
@@ -64,15 +82,17 @@ export function RotatingCoin({
         <motion.div
           className="relative w-full h-full"
           animate={{
-            rotateY: 360,
+            rotateY: [0, 360],
           }}
           transition={{
-            duration: 4,
+            duration: duration || 4,
             repeat: Infinity,
             ease: "linear",
+            repeatType: "loop",
           }}
           style={{
             transformStyle: "preserve-3d",
+            willChange: "transform",
           }}
         >
           {/* Front face of coin - USDC style */}
@@ -88,21 +108,21 @@ export function RotatingCoin({
               className={cn(
                 "w-full h-full rounded-full flex flex-col items-center justify-center",
                 "bg-gradient-to-br",
-                coinColors.bg,
+                COMMON_COIN_BG,
                 "border-2",
                 coinColors.border,
                 "shadow-lg shadow-black/20",
                 "relative overflow-hidden"
               )}
             >
-              {/* Coin design - USDC inspired */}
+              {/* Coin design - Generic USD */}
               <div
                 className={cn(
                   "text-[10px] font-bold uppercase tracking-wider z-10",
                   coinColors.text
                 )}
               >
-                {symbol.slice(0, 2)}
+                US
               </div>
               <div
                 className={cn(
@@ -137,7 +157,7 @@ export function RotatingCoin({
               className={cn(
                 "w-full h-full rounded-full flex items-center justify-center",
                 "bg-gradient-to-br",
-                coinColors.bg,
+                COMMON_COIN_BG,
                 "border-2",
                 coinColors.border,
                 "shadow-lg shadow-black/20",
@@ -150,7 +170,8 @@ export function RotatingCoin({
                   y: [0, -2, 0],
                 }}
                 transition={{
-                  duration: 2,
+                  duration: shineDuration * 0.8,
+                  delay: delay * 0.3,
                   repeat: Infinity,
                   ease: "easeInOut",
                 }}
@@ -178,11 +199,13 @@ export function RotatingCoin({
       {/* Shine/gloss effect */}
       <motion.div
         className="absolute inset-0 rounded-full pointer-events-none overflow-hidden"
+        initial={{ opacity: 0.2 }}
         animate={{
           opacity: [0.2, 0.5, 0.2],
         }}
         transition={{
-          duration: 3,
+          duration: shineDuration,
+          delay: delay * 0.5,
           repeat: Infinity,
           ease: "easeInOut",
         }}

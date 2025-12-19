@@ -202,6 +202,17 @@ export const glass3DVariants: Variants = {
       damping: 20,
     },
   },
+  tap: {
+    scale: 0.95,
+    rotateX: 0,
+    rotateY: 0,
+    z: 10,
+    transition: {
+      type: 'spring',
+      stiffness: 400,
+      damping: 25,
+    },
+  },
 }
 
 export const glass3DTransition: Transition = {
