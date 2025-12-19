@@ -6,7 +6,7 @@ import { Header } from "./header";
 /**
  * Wrapper component that conditionally renders Header based on connection status
  * This allows Header to be placed in the root layout while only showing when connected
- * 
+ *
  * Note: This component should only be rendered once in the root layout
  */
 export function HeaderWrapper() {

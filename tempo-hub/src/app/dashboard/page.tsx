@@ -6,7 +6,6 @@ import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/contexts/toast-context";
 import { CelebrationEffect } from "@/components/ui/celebration-effect";
-import { Header } from "@/components/layout";
 import { AccountDisplay } from "@/components/auth";
 import { TokenList, FaucetButton } from "@/components/wallet";
 import { ActionButtons } from "@/components/dashboard/action-buttons";
@@ -29,10 +28,9 @@ function DashboardContent() {
   const processedTxHashRef = useRef<string | null>(null);
   const hasInitializedRef = useRef(false);
 
-  // Initialize processed txHash from sessionStorage on mount and clean up stale URLs
+  // Initialize processed txHash from sessionStorage on mount
   useEffect(() => {
     if (hasInitializedRef.current) return;
-
     hasInitializedRef.current = true;
     const stored = getSessionStorage<string>(
       STORAGE_KEYS.payment.processedTxHash
@@ -40,20 +38,9 @@ function DashboardContent() {
     if (stored) {
       processedTxHashRef.current = stored;
     }
+  }, []);
 
-    // Clean up URL immediately on mount if already processed (prevents refresh triggers)
-    const paymentParam = searchParams.get("payment");
-    const txHash = searchParams.get("txHash");
-    if (paymentParam === "success" && txHash && stored === txHash) {
-      router.replace("/dashboard");
-    } else if (paymentParam === "success" && !txHash) {
-      // Stale URL without txHash
-      router.replace("/dashboard");
-    }
-  }, [searchParams, router]);
-
-  // Show success toast if redirected from successful payment
-  // Only trigger on actual redirects, not on page refresh
+  // Handle payment success redirect and URL cleanup
   useEffect(() => {
     // Skip if not initialized yet
     if (!hasInitializedRef.current) return;
@@ -61,38 +48,38 @@ function DashboardContent() {
     const paymentParam = searchParams.get("payment");
     const txHash = searchParams.get("txHash");
 
-    // Only trigger if:
-    // 1. payment=success is in URL
-    // 2. We have a valid txHash (from actual transaction)
-    // 3. This txHash hasn't been processed before (check both ref and sessionStorage)
-    if (paymentParam === "success" && txHash) {
-      const stored = getSessionStorage<string>(
-        STORAGE_KEYS.payment.processedTxHash
-      );
+    // If no payment params, nothing to do
+    if (!paymentParam) return;
 
-      // Skip if we've already processed this txHash
-      if (txHash === processedTxHashRef.current || txHash === stored) {
-        // Just clean up URL if already processed
+    // Clean up URL if it's stale or already processed
+    const stored = getSessionStorage<string>(
+      STORAGE_KEYS.payment.processedTxHash
+    );
+    const isAlreadyProcessed =
+      txHash && (txHash === processedTxHashRef.current || txHash === stored);
+    const isStale = paymentParam === "success" && !txHash;
+
+    if (isAlreadyProcessed || isStale) {
+      // Clean up URL only if we're not already on clean dashboard URL
+      if (paymentParam || txHash) {
         router.replace("/dashboard");
-        return;
       }
+      return;
+    }
 
-      // Mark this txHash as processed FIRST (before triggering celebration)
-      // This prevents double-triggering if the effect runs multiple times
+    // Process new successful payment
+    if (paymentParam === "success" && txHash) {
+      // Mark as processed immediately to prevent double processing
       processedTxHashRef.current = txHash;
       setSessionStorage(STORAGE_KEYS.payment.processedTxHash, txHash);
 
-      // Clean up URL immediately to prevent any race conditions
+      // Clean up URL immediately
       router.replace("/dashboard");
 
-      // Small delay to ensure redirect is complete before triggering celebration
-      // This prevents celebration from triggering while still on send page
+      // Trigger celebration and toast after a brief delay
       setTimeout(() => {
-        // Double-check we're still on dashboard and haven't processed this already
         if (processedTxHashRef.current === txHash) {
-          // Trigger celebration by incrementing key (forces re-trigger)
           setCelebrationKey((prev) => prev + 1);
-
           toast({
             title: "Payment sent",
             description: "Transaction confirmed and finalized",
@@ -102,9 +89,6 @@ function DashboardContent() {
           });
         }
       }, 100);
-    } else if (paymentParam === "success" && !txHash) {
-      // If payment=success but no txHash, just clean up URL (likely stale)
-      router.replace("/dashboard");
     }
   }, [searchParams, toast, router]);
 
@@ -134,8 +118,6 @@ function DashboardContent() {
         />
       )}
       <div className="min-h-screen flex flex-col">
-        <Header />
-
         <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
           <motion.div
             variants={staggerContainer}
