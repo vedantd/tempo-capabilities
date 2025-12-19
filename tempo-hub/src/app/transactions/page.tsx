@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useAccount } from "wagmi";
+import { useRouter } from "next/navigation";
 import { useTransactionHistory } from "@/hooks/use-transaction-history";
 import type { TransactionType, TempoTransaction } from "@/types/transactions";
 import { TransactionCard } from "@/components/transactions/transaction-card";
@@ -22,6 +23,7 @@ import {
   getSessionStorage,
   setSessionStorage,
 } from "@/lib/utils/session-storage";
+import { Button } from "@/components/ui/button";
 
 interface FilterState {
   searchQuery: string;
@@ -29,9 +31,20 @@ interface FilterState {
   tokenFilter: string | "all";
 }
 
+const INITIAL_TRANSACTIONS = 6;
+const LOAD_MORE_INCREMENT = 10;
+
 function TransactionsContent() {
   const { isConnected } = useAccount();
+  const router = useRouter();
   const { transactions, isLoading, error } = useTransactionHistory();
+
+  // Redirect to landing if not connected
+  useEffect(() => {
+    if (!isConnected) {
+      router.push("/");
+    }
+  }, [isConnected, router]);
 
   // Load filter state from sessionStorage on mount
   const storedFilters = getSessionStorage<FilterState>(
@@ -46,6 +59,7 @@ function TransactionsContent() {
   const [tokenFilter, setTokenFilter] = useState<string | "all">(
     storedFilters?.tokenFilter || "all"
   );
+  const [visibleCount, setVisibleCount] = useState(INITIAL_TRANSACTIONS);
 
   // Save filter state to sessionStorage when it changes
   useEffect(() => {
@@ -55,6 +69,11 @@ function TransactionsContent() {
       tokenFilter,
     };
     setSessionStorage(STORAGE_KEYS.filters.transactions, filterState);
+  }, [searchQuery, typeFilter, tokenFilter]);
+
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(INITIAL_TRANSACTIONS);
   }, [searchQuery, typeFilter, tokenFilter]);
 
   // Filter transactions
@@ -108,6 +127,45 @@ function TransactionsContent() {
     ) as [string, TempoTransaction[]][];
   }, [filteredTransactions]);
 
+  // Flatten grouped transactions for "Show More" functionality
+  const flattenedTransactions = useMemo(() => {
+    return groupedTransactions.flatMap(([date, txs]) =>
+      txs.map((tx) => ({ ...tx, date }))
+    );
+  }, [groupedTransactions]);
+
+  // Get visible transactions
+  const visibleTransactions = useMemo(() => {
+    return flattenedTransactions.slice(0, visibleCount);
+  }, [flattenedTransactions, visibleCount]);
+
+  // Re-group visible transactions by date for display
+  const visibleGroupedTransactions = useMemo(() => {
+    const groups: Record<string, TempoTransaction[]> = {};
+
+    visibleTransactions.forEach((tx) => {
+      const date =
+        tx.date ||
+        (tx.blockTimestamp
+          ? new Date(Number(tx.blockTimestamp) * 1000).toLocaleDateString()
+          : new Date(tx.timestamp).toLocaleDateString());
+
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(tx);
+    });
+
+    return Object.entries(groups).sort(
+      ([a], [b]) => new Date(b).getTime() - new Date(a).getTime()
+    ) as [string, TempoTransaction[]][];
+  }, [visibleTransactions]);
+
+  const hasMore = visibleCount < flattenedTransactions.length;
+  const handleShowMore = () => {
+    setVisibleCount((prev) => prev + LOAD_MORE_INCREMENT);
+  };
+
   if (!isConnected) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -156,6 +214,11 @@ function TransactionsContent() {
           <p className="text-muted-foreground mt-1">
             {filteredTransactions.length}{" "}
             {filteredTransactions.length === 1 ? "transaction" : "transactions"}
+            {hasMore && (
+              <span className="ml-2">
+                (Showing {visibleCount} of {filteredTransactions.length})
+              </span>
+            )}
           </p>
         </div>
       </div>
@@ -186,26 +249,47 @@ function TransactionsContent() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {groupedTransactions.map(([date, txs]) => (
-            <div key={date}>
-              <div className="flex items-center gap-2 mb-4">
-                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                  {date}
-                </h2>
-                <div className="flex-1 h-px bg-border" />
-                <span className="text-xs text-muted-foreground">
-                  {txs.length}
-                </span>
+        <>
+          <div className="space-y-6">
+            {visibleGroupedTransactions.map(([date, txs]) => (
+              <div key={date}>
+                <div className="flex items-center gap-2 mb-4">
+                  <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                    {date}
+                  </h2>
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-muted-foreground">
+                    {txs.length}
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {txs.map((tx) => (
+                    <TransactionCard key={tx.id} transaction={tx} />
+                  ))}
+                </div>
               </div>
-              <div className="space-y-3">
-                {txs.map((tx) => (
-                  <TransactionCard key={tx.id} transaction={tx} />
-                ))}
-              </div>
+            ))}
+          </div>
+
+          {/* Show More Button */}
+          {hasMore && (
+            <div className="flex justify-center pt-6">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={handleShowMore}
+                className="min-w-[200px]"
+              >
+                Show More (
+                {Math.min(
+                  LOAD_MORE_INCREMENT,
+                  flattenedTransactions.length - visibleCount
+                )}{" "}
+                more)
+              </Button>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );
