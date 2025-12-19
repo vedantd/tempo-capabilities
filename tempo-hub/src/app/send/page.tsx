@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
 import { Header } from "@/components/layout";
-import { SendForm } from "@/components/payments";
+import { ModernSendForm } from "@/components/payments/modern-send-form";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { ClientOnly } from "@/components/client-only";
+import { motion } from "framer-motion";
+import { pageVariants, pageTransition } from "@/lib/motion";
 
 function SendContent() {
   const { isConnected } = useAccount();
@@ -32,10 +34,17 @@ function SendContent() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <motion.div
+      className="min-h-screen flex flex-col"
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={pageVariants}
+      transition={pageTransition}
+    >
       <Header />
 
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-lg">
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-2xl">
         <div className="space-y-6">
           {/* Back Button */}
           <Link href="/dashboard">
@@ -45,8 +54,8 @@ function SendContent() {
             </Button>
           </Link>
 
-          {/* Send Form */}
-          <SendForm />
+          {/* Modern Send Form */}
+          <ModernSendForm />
 
           {/* Help Text */}
           <div className="text-center space-y-2">
@@ -59,7 +68,7 @@ function SendContent() {
           </div>
         </div>
       </main>
-    </div>
+    </motion.div>
   );
 }
 

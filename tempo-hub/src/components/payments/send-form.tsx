@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
+import { useRouter } from "next/navigation";
 import { isAddress } from "viem";
 import { useSendPayment } from "@/hooks/use-send-payment";
 import { RecipientInput } from "./recipient-input";
@@ -23,6 +24,7 @@ import { Send, Loader2 } from "lucide-react";
 
 export function SendForm() {
   const { isConnected } = useAccount();
+  const router = useRouter();
 
   // Form state
   const [recipient, setRecipient] = useState("");
@@ -35,6 +37,16 @@ export function SendForm() {
   const [sponsored, setSponsored] = useState(false);
 
   const { send, status, txHash, error, reset, isLoading } = useSendPayment();
+
+  // Redirect to dashboard after successful payment
+  useEffect(() => {
+    if (status === 'success') {
+      const timer = setTimeout(() => {
+        router.push('/dashboard?payment=success');
+      }, 3000); // Give user 3 seconds to see success message
+      return () => clearTimeout(timer);
+    }
+  }, [status, router]);
 
   // Form validation
   const isValidRecipient = isAddress(recipient);
