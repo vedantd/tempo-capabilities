@@ -1,6 +1,10 @@
+'use client'
+
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
+import { motion } from "framer-motion"
+import { scaleVariants, scaleTransition } from "@/lib/motion"
 
 import { cn } from "@/lib/utils"
 
@@ -41,20 +45,40 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
+  disabled,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
   }) {
-  const Comp = asChild ? Slot : "button"
+  if (asChild) {
+    return (
+      <Slot
+        data-slot="button"
+        data-variant={variant}
+        data-size={size}
+        className={cn(buttonVariants({ variant, size, className }))}
+        {...props}
+      />
+    )
+  }
+
+  // Extract motion-specific props and regular button props
+  const { onDrag, onDragStart, onDragEnd, ...buttonProps } = props as any
 
   return (
-    <Comp
+    <motion.button
       data-slot="button"
       data-variant={variant}
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
+      disabled={disabled}
+      variants={!disabled ? scaleVariants : undefined}
+      initial={!disabled ? "rest" : undefined}
+      whileHover={!disabled ? "hover" : undefined}
+      whileTap={!disabled ? "tap" : undefined}
+      transition={!disabled ? scaleTransition : undefined}
+      {...buttonProps}
     />
   )
 }
