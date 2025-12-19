@@ -3,6 +3,9 @@
 import { Suspense } from "react";
 import { useAccount } from "wagmi";
 import { useRouter, useSearchParams } from "next/navigation";
+
+// Force dynamic rendering - this page requires authentication
+export const dynamic = 'force-dynamic';
 import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/contexts/toast-context";
@@ -162,7 +165,7 @@ function DashboardContentInner() {
   );
 }
 
-function DashboardContent() {
+export default function DashboardPage() {
   return (
     <Suspense
       fallback={
@@ -174,8 +177,4 @@ function DashboardContent() {
       <DashboardContentInner />
     </Suspense>
   );
-}
-
-export default function DashboardPage() {
-  return <DashboardContent />;
 }
