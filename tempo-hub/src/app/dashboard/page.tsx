@@ -110,17 +110,20 @@ function PaymentSuccessHandler() {
 }
 
 function DashboardContentInner() {
-  const { isConnected } = useAccount();
+  const { isConnected, isConnecting } = useAccount();
   const router = useRouter();
 
-  // Redirect to landing if not connected
+  // Redirect to landing if not connected (but allow time for connection to resolve)
   useEffect(() => {
-    if (!isConnected) {
+    // Only redirect if we're sure we're not connected (not just still connecting)
+    if (!isConnecting && !isConnected) {
       router.push("/");
     }
-  }, [isConnected, router]);
+  }, [isConnected, isConnecting, router]);
 
-  if (!isConnected) {
+  // Show UI immediately while connection is being checked
+  // Only show spinner if we're definitely not connected and not still connecting
+  if (!isConnecting && !isConnected) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" label="Redirecting..." />
